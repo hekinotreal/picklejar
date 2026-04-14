@@ -1,1 +1,96 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hyper-Incremental</title>
+    <style>
+        :root { --bg: #0a0a0a; --panel: #1a1a1a; --accent: #ff4747; --text: #ffffff; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        #header { text-align: center; padding: 40px; width: 100%; background: linear-gradient(to bottom, #111, #0a0a0a); border-bottom: 2px solid #333; }
+        #main-display { font-size: 4rem; font-weight: bold; color: var(--accent); text-shadow: 0 0 20px rgba(255, 71, 71, 0.4); margin: 10px 0; }
+        .container { display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; justify-content: center; max-width: 1200px; }
+        .layer-panel { background: var(--panel); border: 1px solid #333; padding: 20px; width: 300px; border-radius: 8px; }
+        .upgrade-btn { background: #333; color: white; border: none; padding: 10px; width: 100%; margin: 5px 0; cursor: pointer; text-align: left; border-radius: 4px; transition: 0.2s; }
+        .upgrade-btn:hover:not(:disabled) { background: #444; }
+        .upgrade-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .prestige-btn { background: var(--accent); font-weight: bold; text-align: center; }
+        .stats { font-size: 0.9rem; color: #888; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div id="header">
+    <div class="stats">Current Value</div>
+    <div id="main-display">1.00</div>
+    <div id="sub-stats">Progress to 10^^^^^10: 0%</div>
+</div>
+<div class="container">
+    <div class="layer-panel">
+        <h3>Layer 1: Multipliers</h3>
+        <button class="upgrade-btn" id="upg1_1" onclick="buyUpg(1, 1)">Buy Generator</button>
+        <button class="upgrade-btn" id="upg1_2" onclick="buyUpg(1, 2)">Better Math</button>
+        <button class="prestige-btn upgrade-btn" onclick="prestige(1)">RESET FOR EXPONENTS</button>
+    </div>
+    <div class="layer-panel" id="layer2" style="display:none">
+        <h3>Layer 2: Exponents</h3>
+        <button class="upgrade-btn" id="upg2_1" onclick="buyUpg(2, 1)">Expansion</button>
+        <button class="prestige-btn upgrade-btn" onclick="prestige(2)">RESET FOR TETRATION</button>
+    </div>
+    <div class="layer-panel" id="layer3" style="display:none">
+        <h3>Layer 3: Hyper-Space</h3>
+        <button class="upgrade-btn" id="upg3_1" onclick="buyUpg(3, 1)">Unlock Tetration</button>
+        <button class="upgrade-btn" id="upg3_2" onclick="buyUpg(3, 2)">Unlock Pentation</button>
+    </div>
+</div>
+<script>
+    class AlyaNum {
+        constructor(d) {
+            this.sign = d.sign ?? 1;
+            this.multiplicand = d.multiplicand ?? 0;
+            this.exponent = d.exponent ?? 0;
+            this.tetrate = d.tetrate ?? 0;
+            this.pentate = d.pentate ?? 0;
+            this.hexate = d.hexate ?? 0;
+            this.heptate = d.heptate ?? 0;
+        }
+        toSingle() {
+            if (this.sign === 0) return 0;
+            let mag = 0;
+            if (this.heptate > 0) mag = 1.2e17 + Math.log10(this.heptate + 1) * 6.26775e14;
+            else if (this.hexate > 0) mag = 1.1e17 + Math.log10(this.hexate + 1) * 6.26775e14;
+            else if (this.pentate > 0) mag = 1.0e17 + Math.log10(this.pentate + 1) * 6.26775e14;
+            else if (this.tetrate > 0) mag = 0.8e17 + (this.tetrate * 1e10);
+            else if (this.exponent > 0) mag = 0.4e17 + (this.exponent * 1e10);
+            else mag = Math.log10(this.multiplicand + 1) * 6.26775e14;
+            return mag * this.sign;
+        }
+        toString() {
+            if (this.sign === 0) return "0";
+            const f = n => n < 1000 ? n.toFixed(2) : (n / Math.pow(10, Math.floor(Math.log10(n)))).toFixed(2) + "e" + Math.floor(Math.log10(n));
+            if (this.heptate > 0) return "E10#" + f(this.heptate);
+            if (this.hexate > 0) return "E10#" + f(this.hexate);
+            if (this.pentate > 0) return "E10#" + f(this.pentate);
+            if (this.tetrate > 0) return "e".repeat(Math.min(Math.floor(this.tetrate), 3)) + f(this.multiplicand);
+            if (this.exponent > 5) return "e" + f(this.exponent);
+            let v = this.multiplicand * Math.pow(10, this.exponent);
+            return v > 1e9 ? v.toExponential(2) : v.toLocaleString(undefined, {maximumFractionDigits: 2});
+        }
+    }
+    let game = { value: new AlyaNum({multiplicand: 1}), orbs: 0, shards: 0, upgs: {}, lastTick: Date.now() };
+    function update() {
+        let dt = (Date.now() - game.lastTick) / 1000; game.lastTick = Date.now();
+        if (game.upgs["3_2"]) game.value.heptate += (game.shards / 1e12) * dt;
+        else if (game.upgs["3_1"]) game.value.pentate += (game.shards / 1e6) * dt;
+        else if (game.orbs > 0) game.value.exponent += (game.orbs / 100) * dt;
+        else game.value.multiplicand += (1 + (game.upgs["1_1"]||0)) * dt;
+        if (game.value.heptate >= 10) { document.getElementById("main-display").innerText = "10^^^^^10"; return; }
+        document.getElementById("main-display").innerText = game.value.toString();
+        if (game.value.exponent > 0) document.getElementById("layer2").style.display = "block";
+        if (game.value.tetrate > 0) document.getElementById("layer3").style.display = "block";
+        requestAnimationFrame(update);
+    }
+    function buyUpg(l, id) { let k = l+"_"+id; game.upgs[k] = (game.upgs[k]||0)+1; }
+    function prestige(l) { if (l===1) game.orbs += (game.value.exponent||0)*5; if (l===2) game.shards += (game.value.tetrate||0)*100; }
+    update();
+</script>
+</body>
+</html>
